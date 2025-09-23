@@ -8,6 +8,9 @@
 *.so
 *.dylib
 
+# Main binary
+md_split
+
 # Test binary, built with `go test -c`
 *.test
 
