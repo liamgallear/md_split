@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.7'
+      
+      - name: Get tag name
+        id: tag
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Build binaries
+        run: |
+          # Build for multiple platforms
+          GOOS=linux GOARCH=amd64 go build -o md_split-linux-amd64 -ldflags="-s -w"
+          GOOS=linux GOARCH=arm64 go build -o md_split-linux-arm64 -ldflags="-s -w"
+          GOOS=darwin GOARCH=amd64 go build -o md_split-darwin-amd64 -ldflags="-s -w"
+          GOOS=darwin GOARCH=arm64 go build -o md_split-darwin-arm64 -ldflags="-s -w"
+          GOOS=windows GOARCH=amd64 go build -o md_split-windows-amd64.exe -ldflags="-s -w"
+          
+          # Create checksums
+          sha256sum md_split-* > checksums.txt
+      
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          release_name: Release ${{ steps.tag.outputs.tag }}
+          body: |
+            ## Changes
+            
+            See the full changelog at [CHANGELOG.md](https://github.com/liamgallear/md_split/blob/main/CHANGELOG.md).
+            
+            ## Installation
+            
+            Download the appropriate binary for your platform from the assets below.
+            
+            ### Linux
+            ```bash
+            wget https://github.com/liamgallear/md_split/releases/download/${{ steps.tag.outputs.tag }}/md_split-linux-amd64
+            chmod +x md_split-linux-amd64
+            mv md_split-linux-amd64 md_split
+            ```
+            
+            ### macOS
+            ```bash
+            wget https://github.com/liamgallear/md_split/releases/download/${{ steps.tag.outputs.tag }}/md_split-darwin-amd64
+            chmod +x md_split-darwin-amd64
+            mv md_split-darwin-amd64 md_split
+            ```
+            
+            ### Windows
+            Download `md_split-windows-amd64.exe` and rename to `md_split.exe`.
+          draft: false
+          prerelease: false
+      
+      - name: Upload Linux AMD64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./md_split-linux-amd64
+          asset_name: md_split-linux-amd64
+          asset_content_type: application/octet-stream
+      
+      - name: Upload Linux ARM64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./md_split-linux-arm64
+          asset_name: md_split-linux-arm64
+          asset_content_type: application/octet-stream
+      
+      - name: Upload macOS AMD64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./md_split-darwin-amd64
+          asset_name: md_split-darwin-amd64
+          asset_content_type: application/octet-stream
+      
+      - name: Upload macOS ARM64 Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./md_split-darwin-arm64
+          asset_name: md_split-darwin-arm64
+          asset_content_type: application/octet-stream
+      
+      - name: Upload Windows Binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./md_split-windows-amd64.exe
+          asset_name: md_split-windows-amd64.exe
+          asset_content_type: application/octet-stream
+      
+      - name: Upload Checksums
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./checksums.txt
+          asset_name: checksums.txt
+          asset_content_type: text/plain
