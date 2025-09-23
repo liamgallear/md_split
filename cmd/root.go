@@ -11,12 +11,14 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "md_split [file]",
-	Short: "Split markdown files based on H2 headings",
-	Long: `md_split takes a markdown file and splits it into separate files based on H2 headings.
-Each split file will be prefixed with a section number (01, 02, 03, etc.) and saved in a 'splits' directory relative to the original file.`,
-	Args: cobra.ExactArgs(1),
-	RunE: splitMarkdown,
+	Use:   "md_split",
+	Short: "A tool to split and merge markdown files based on H2 headings",
+	Long: `md_split is a CLI tool for managing markdown files by splitting them into sections based on H2 headings
+and merging split files back together.
+
+Available commands:
+  split   Split a markdown file into separate files based on H2 headings
+  merge   Merge split files back into a single markdown file`,
 }
 
 func Execute() {
@@ -24,6 +26,29 @@ func Execute() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func init() {
+	rootCmd.AddCommand(splitCmd)
+	rootCmd.AddCommand(mergeCmd)
+}
+
+var splitCmd = &cobra.Command{
+	Use:   "split [file]",
+	Short: "Split a markdown file based on H2 headings",
+	Long: `Split takes a markdown file and splits it into separate files based on H2 headings.
+Each split file will be prefixed with a section number (01, 02, 03, etc.) and saved in a 'splits' directory relative to the original file.`,
+	Args: cobra.ExactArgs(1),
+	RunE: splitMarkdown,
+}
+
+var mergeCmd = &cobra.Command{
+	Use:   "merge [splits-directory] [output-file]",
+	Short: "Merge split files back into a single markdown file",
+	Long: `Merge takes a directory containing split markdown files and combines them back into a single markdown file.
+The split files should be numbered (01-, 02-, 03-, etc.) as created by the split command.`,
+	Args: cobra.ExactArgs(2),
+	RunE: mergeMarkdown,
 }
 
 func splitMarkdown(cmd *cobra.Command, args []string) error {
@@ -131,4 +156,69 @@ func sanitizeFilename(filename string) string {
 	}
 	
 	return sanitized
+}
+
+func mergeMarkdown(cmd *cobra.Command, args []string) error {
+	splitsDir := args[0]
+	outputFile := args[1]
+	
+	// Check if splits directory exists
+	if _, err := os.Stat(splitsDir); os.IsNotExist(err) {
+		return fmt.Errorf("splits directory does not exist: %s", splitsDir)
+	}
+
+	// Read all markdown files from the splits directory
+	files, err := filepath.Glob(filepath.Join(splitsDir, "*.md"))
+	if err != nil {
+		return fmt.Errorf("error reading splits directory: %v", err)
+	}
+
+	if len(files) == 0 {
+		return fmt.Errorf("no markdown files found in splits directory: %s", splitsDir)
+	}
+
+	// Sort files to ensure correct order (relies on numeric prefix)
+	// This works because the files are named with zero-padded numbers (01-, 02-, etc.)
+	var sortedFiles []string
+	for i := 1; i <= 99; i++ { // Support up to 99 sections
+		prefix := fmt.Sprintf("%02d-", i)
+		for _, file := range files {
+			if strings.Contains(filepath.Base(file), prefix) {
+				sortedFiles = append(sortedFiles, file)
+				break
+			}
+		}
+	}
+
+	if len(sortedFiles) == 0 {
+		return fmt.Errorf("no properly numbered split files found (expecting files with format 01-*, 02-*, etc.)")
+	}
+
+	// Merge the content
+	var mergedContent strings.Builder
+	
+	for i, file := range sortedFiles {
+		content, err := os.ReadFile(file)
+		if err != nil {
+			return fmt.Errorf("error reading file %s: %v", file, err)
+		}
+		
+		// Add the content
+		mergedContent.Write(content)
+		
+		// Add spacing between sections (except for the last one)
+		if i < len(sortedFiles)-1 {
+			mergedContent.WriteString("\n\n")
+		}
+		
+		fmt.Printf("Merged: %s\n", filepath.Base(file))
+	}
+
+	// Write the merged content to output file
+	if err := os.WriteFile(outputFile, []byte(mergedContent.String()), 0644); err != nil {
+		return fmt.Errorf("error writing output file %s: %v", outputFile, err)
+	}
+
+	fmt.Printf("Successfully merged %d files into %s\n", len(sortedFiles), outputFile)
+	return nil
 }
