@@ -113,9 +113,9 @@ func parseMarkdownSections(content string) ([]section, error) {
 
 func sanitizeFilename(filename string) string {
 	// Replace spaces with hyphens and remove invalid characters
+	filename = strings.ReplaceAll(filename, " ", "-")
 	reg := regexp.MustCompile(`[^\w\-_.]`)
 	sanitized := reg.ReplaceAllString(filename, "")
-	sanitized = strings.ReplaceAll(sanitized, " ", "-")
 	sanitized = strings.ToLower(sanitized)
 	
 	// Limit length to avoid filesystem issues
