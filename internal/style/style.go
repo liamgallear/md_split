@@ -9,7 +9,6 @@ var (
 	// Primary colors
 	PrimaryColor   = lipgloss.Color("#00A86B") // Green
 	SecondaryColor = lipgloss.Color("#0066CC") // Blue
-	AccentColor    = lipgloss.Color("#FF6B00") // Orange
 	
 	// Status colors
 	SuccessColor = lipgloss.Color("#00C851") // Success green
