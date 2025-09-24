@@ -15,7 +15,7 @@ var mergeCmd = &cobra.Command{
 	Use:   "merge [splits-directory] [output-file]",
 	Short: "Merge split files back into a single markdown file",
 	Long: `Merge takes a directory containing split markdown files and combines them back into a single markdown file.
-The split files should be numbered (01-, 02-, 03-, etc.) as created by the split command.`,
+The split files should be numbered (00-, 01-, 02-, 03-, etc.) as created by the split command.`,
 	Args: cobra.ExactArgs(2),
 	RunE: mergeMarkdown,
 }
@@ -23,7 +23,7 @@ The split files should be numbered (01-, 02-, 03-, etc.) as created by the split
 func mergeMarkdown(cmd *cobra.Command, args []string) error {
 	splitsDir := args[0]
 	outputFile := args[1]
-	
+
 	// Check if splits directory exists
 	if _, err := os.Stat(splitsDir); os.IsNotExist(err) {
 		return fmt.Errorf("splits directory does not exist: %s", splitsDir)
@@ -60,21 +60,21 @@ func mergeMarkdown(cmd *cobra.Command, args []string) error {
 	fmt.Println(style.Info("Merging split files..."))
 	var mergedContent strings.Builder
 	bar := progressbar.Default(int64(len(sortedFiles)))
-	
+
 	for i, file := range sortedFiles {
 		content, err := os.ReadFile(file)
 		if err != nil {
 			return fmt.Errorf("error reading file %s: %v", file, err)
 		}
-		
+
 		// Add the content
 		mergedContent.Write(content)
-		
+
 		// Add spacing between sections (except for the last one)
 		if i < len(sortedFiles)-1 {
 			mergedContent.WriteString("\n\n")
 		}
-		
+
 		fmt.Println(style.FileMerged(filepath.Base(file)))
 		bar.Add(1)
 	}

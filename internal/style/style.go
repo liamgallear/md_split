@@ -9,13 +9,13 @@ var (
 	// Primary colors
 	PrimaryColor   = lipgloss.Color("#00A86B") // Green
 	SecondaryColor = lipgloss.Color("#0066CC") // Blue
-	
+
 	// Status colors
 	SuccessColor = lipgloss.Color("#00C851") // Success green
 	ErrorColor   = lipgloss.Color("#FF4444") // Error red
 	WarningColor = lipgloss.Color("#FFBB33") // Warning amber
 	InfoColor    = lipgloss.Color("#33B5E5") // Info blue
-	
+
 	// Neutral colors
 	MutedColor = lipgloss.Color("#999999") // Muted gray
 )
@@ -24,49 +24,49 @@ var (
 var (
 	// Header styles
 	TitleStyle = lipgloss.NewStyle().
-		Foreground(PrimaryColor).
-		Bold(true).
-		Margin(1, 0)
-	
+			Foreground(PrimaryColor).
+			Bold(true).
+			Margin(1, 0)
+
 	SubtitleStyle = lipgloss.NewStyle().
-		Foreground(SecondaryColor).
-		Bold(true)
-	
+			Foreground(SecondaryColor).
+			Bold(true)
+
 	// Message styles
 	SuccessStyle = lipgloss.NewStyle().
-		Foreground(SuccessColor).
-		Bold(true)
-	
+			Foreground(SuccessColor).
+			Bold(true)
+
 	ErrorStyle = lipgloss.NewStyle().
-		Foreground(ErrorColor).
-		Bold(true)
-	
+			Foreground(ErrorColor).
+			Bold(true)
+
 	WarningStyle = lipgloss.NewStyle().
-		Foreground(WarningColor).
-		Bold(true)
-	
+			Foreground(WarningColor).
+			Bold(true)
+
 	InfoStyle = lipgloss.NewStyle().
-		Foreground(InfoColor)
-	
+			Foreground(InfoColor)
+
 	// File operation styles
 	FileCreatedStyle = lipgloss.NewStyle().
-		Foreground(SuccessColor)
-	
+				Foreground(SuccessColor)
+
 	FileMergedStyle = lipgloss.NewStyle().
-		Foreground(InfoColor)
-	
+			Foreground(InfoColor)
+
 	// Summary styles
 	SummaryStyle = lipgloss.NewStyle().
-		Foreground(PrimaryColor).
-		Bold(true).
-		Margin(1, 0).
-		Padding(0, 1).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(PrimaryColor)
-	
+			Foreground(PrimaryColor).
+			Bold(true).
+			Margin(1, 0).
+			Padding(0, 1).
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(PrimaryColor)
+
 	// Helper text styles
 	MutedStyle = lipgloss.NewStyle().
-		Foreground(MutedColor)
+			Foreground(MutedColor)
 )
 
 // Helper functions for common operations
