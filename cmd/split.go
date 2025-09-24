@@ -16,14 +16,15 @@ var splitCmd = &cobra.Command{
 	Use:   "split [file]",
 	Short: "Split a markdown file based on H2 headings",
 	Long: `Split takes a markdown file and splits it into separate files based on H2 headings.
-Each split file will be prefixed with a section number (01, 02, 03, etc.) and saved in a 'splits' directory relative to the original file.`,
+Each split file will be prefixed with a section number (01, 02, 03, etc.) and saved in a 'splits' directory relative to the original file.
+Content before the first H2 heading will be saved as '00-preamble.md'.`,
 	Args: cobra.ExactArgs(1),
 	RunE: splitMarkdown,
 }
 
 func splitMarkdown(cmd *cobra.Command, args []string) error {
 	inputFile := args[0]
-	
+
 	// Check if input file exists
 	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
 		return fmt.Errorf("file does not exist: %s", inputFile)
@@ -42,13 +43,13 @@ func splitMarkdown(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(sections) == 0 {
-		return fmt.Errorf("no H2 headings found in the file")
+		return fmt.Errorf("no content found in the file")
 	}
 
 	// Create splits directory
 	inputDir := filepath.Dir(inputFile)
 	splitsDir := filepath.Join(inputDir, "splits")
-	
+
 	if err := os.MkdirAll(splitsDir, 0755); err != nil {
 		return fmt.Errorf("error creating splits directory: %v", err)
 	}
@@ -56,15 +57,20 @@ func splitMarkdown(cmd *cobra.Command, args []string) error {
 	// Write each section to a separate file
 	fmt.Println(style.Info("Writing split files..."))
 	bar := progressbar.Default(int64(len(sections)))
+
+	sec := 0
+	if sections[0].title != "preamble" {
+		sec = 1
+	}
 	
 	for i, section := range sections {
-		filename := fmt.Sprintf("%02d-%s.md", i+1, sanitizeFilename(section.title))
+		filename := fmt.Sprintf("%02d-%s.md", sec+i, sanitizeFilename(section.title))
 		filepath := filepath.Join(splitsDir, filename)
-		
+
 		if err := os.WriteFile(filepath, []byte(section.content), 0644); err != nil {
 			return fmt.Errorf("error writing file %s: %v", filename, err)
 		}
-		
+
 		fmt.Println(style.FileCreated(filename))
 		bar.Add(1)
 	}
@@ -81,21 +87,32 @@ type section struct {
 func parseMarkdownSections(content string) ([]section, error) {
 	var sections []section
 	lines := strings.Split(content, "\n")
-	
+
 	// Regex to match H2 headings (## heading)
 	h2Regex := regexp.MustCompile(`^##\s+(.+)$`)
-	
+
 	var currentSection *section
 	var currentContent []string
-	
+	var preH2Content []string
+
 	for _, line := range lines {
 		if h2Regex.MatchString(line) {
+			// If we have pre-H2 content, save it as the first section
+			if currentSection == nil && len(preH2Content) > 0 {
+				// Only save if there's non-whitespace content
+				preContent := strings.TrimSpace(strings.Join(preH2Content, "\n"))
+				if preContent != "" {
+					preSection := section{title: "preamble", content: strings.Join(preH2Content, "\n")}
+					sections = append(sections, preSection)
+				}
+			}
+
 			// Save the previous section if it exists
 			if currentSection != nil {
 				currentSection.content = strings.Join(currentContent, "\n")
 				sections = append(sections, *currentSection)
 			}
-			
+
 			// Start a new section
 			matches := h2Regex.FindStringSubmatch(line)
 			title := strings.TrimSpace(matches[1])
@@ -104,16 +121,18 @@ func parseMarkdownSections(content string) ([]section, error) {
 		} else if currentSection != nil {
 			// Add line to current section
 			currentContent = append(currentContent, line)
+		} else {
+			// Content before first H2 - collect it
+			preH2Content = append(preH2Content, line)
 		}
-		// If no current section and not an H2, ignore the line (content before first H2)
 	}
-	
+
 	// Save the last section
 	if currentSection != nil {
 		currentSection.content = strings.Join(currentContent, "\n")
 		sections = append(sections, *currentSection)
 	}
-	
+
 	return sections, nil
 }
 
@@ -123,11 +142,11 @@ func sanitizeFilename(filename string) string {
 	reg := regexp.MustCompile(`[^\w\-_.]`)
 	sanitized := reg.ReplaceAllString(filename, "")
 	sanitized = strings.ToLower(sanitized)
-	
+
 	// Limit length to avoid filesystem issues
 	if len(sanitized) > 50 {
 		sanitized = sanitized[:50]
 	}
-	
+
 	return sanitized
 }
