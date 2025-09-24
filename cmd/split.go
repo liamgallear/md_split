@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/liamgallear/md_split/internal/style"
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -52,6 +54,9 @@ func splitMarkdown(cmd *cobra.Command, args []string) error {
 	}
 
 	// Write each section to a separate file
+	fmt.Println(style.Info("Writing split files..."))
+	bar := progressbar.Default(int64(len(sections)))
+	
 	for i, section := range sections {
 		filename := fmt.Sprintf("%02d-%s.md", i+1, sanitizeFilename(section.title))
 		filepath := filepath.Join(splitsDir, filename)
@@ -60,10 +65,11 @@ func splitMarkdown(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("error writing file %s: %v", filename, err)
 		}
 		
-		fmt.Printf("Created: %s\n", filename)
+		fmt.Println(style.FileCreated(filename))
+		bar.Add(1)
 	}
 
-	fmt.Printf("Successfully split markdown into %d files in %s\n", len(sections), splitsDir)
+	fmt.Printf("\n%s\n", style.Summary(fmt.Sprintf("Successfully split markdown into %d files in %s", len(sections), splitsDir)))
 	return nil
 }
 

@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/liamgallear/md_split/internal/style"
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 )
 
@@ -55,7 +57,9 @@ func mergeMarkdown(cmd *cobra.Command, args []string) error {
 	}
 
 	// Merge the content
+	fmt.Println(style.Info("Merging split files..."))
 	var mergedContent strings.Builder
+	bar := progressbar.Default(int64(len(sortedFiles)))
 	
 	for i, file := range sortedFiles {
 		content, err := os.ReadFile(file)
@@ -71,7 +75,8 @@ func mergeMarkdown(cmd *cobra.Command, args []string) error {
 			mergedContent.WriteString("\n\n")
 		}
 		
-		fmt.Printf("Merged: %s\n", filepath.Base(file))
+		fmt.Println(style.FileMerged(filepath.Base(file)))
+		bar.Add(1)
 	}
 
 	// Write the merged content to output file
@@ -79,6 +84,6 @@ func mergeMarkdown(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error writing output file %s: %v", outputFile, err)
 	}
 
-	fmt.Printf("Successfully merged %d files into %s\n", len(sortedFiles), outputFile)
+	fmt.Printf("\n%s\n", style.Summary(fmt.Sprintf("Successfully merged %d files into %s", len(sortedFiles), outputFile)))
 	return nil
 }
