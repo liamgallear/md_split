@@ -58,18 +58,13 @@ func splitMarkdown(cmd *cobra.Command, args []string) error {
 	fmt.Println(style.Info("Writing split files..."))
 	bar := progressbar.Default(int64(len(sections)))
 
+	sec := 0
+	if sections[0].title != "preamble" {
+		sec = 1
+	}
+	
 	for i, section := range sections {
-		var filename string
-		if section.title == "preamble" {
-			filename = "00-preamble.md"
-		} else {
-			// Adjust index for non-preamble sections
-			sectionNum := i + 1
-			if len(sections) > 0 && sections[0].title == "preamble" {
-				sectionNum = i // Don't increment if first section is preamble
-			}
-			filename = fmt.Sprintf("%02d-%s.md", sectionNum, sanitizeFilename(section.title))
-		}
+		filename := fmt.Sprintf("%02d-%s.md", sec+i, sanitizeFilename(section.title))
 		filepath := filepath.Join(splitsDir, filename)
 
 		if err := os.WriteFile(filepath, []byte(section.content), 0644); err != nil {
@@ -129,16 +124,6 @@ func parseMarkdownSections(content string) ([]section, error) {
 		} else {
 			// Content before first H2 - collect it
 			preH2Content = append(preH2Content, line)
-		}
-	}
-
-	// Handle case where there's only pre-H2 content and no H2 sections
-	if currentSection == nil && len(preH2Content) > 0 {
-		// Only save if there's non-whitespace content
-		preContent := strings.TrimSpace(strings.Join(preH2Content, "\n"))
-		if preContent != "" {
-			preSection := section{title: "preamble", content: strings.Join(preH2Content, "\n")}
-			sections = append(sections, preSection)
 		}
 	}
 
