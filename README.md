@@ -14,6 +14,13 @@ cd md_split
 go build -o md_split
 ```
 
+### Pre-built Binaries
+
+Alternatively, you can download pre-built binaries from the [Releases page](https://github.com/liamgallear/md_split/releases). Binaries are available for:
+- Linux (AMD64, ARM64)
+- macOS (AMD64, ARM64) 
+- Windows (AMD64, ARM64)
+
 ## Usage
 
 The tool provides two main commands: `split` and `merge`.
