@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/liamgallear/md_split/internal/style"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +21,7 @@ Available commands:
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, style.Error(err.Error()))
 		os.Exit(1)
 	}
 }
