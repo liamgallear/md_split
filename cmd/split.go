@@ -42,7 +42,7 @@ func splitMarkdown(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(sections) == 0 {
-		return fmt.Errorf("no H2 headings found in the file")
+		return fmt.Errorf("no content found in the file")
 	}
 
 	// Create splits directory
@@ -58,7 +58,17 @@ func splitMarkdown(cmd *cobra.Command, args []string) error {
 	bar := progressbar.Default(int64(len(sections)))
 	
 	for i, section := range sections {
-		filename := fmt.Sprintf("%02d-%s.md", i+1, sanitizeFilename(section.title))
+		var filename string
+		if section.title == "preamble" {
+			filename = "00-preamble.md"
+		} else {
+			// Adjust index for non-preamble sections
+			sectionNum := i + 1
+			if len(sections) > 0 && sections[0].title == "preamble" {
+				sectionNum = i // Don't increment if first section is preamble
+			}
+			filename = fmt.Sprintf("%02d-%s.md", sectionNum, sanitizeFilename(section.title))
+		}
 		filepath := filepath.Join(splitsDir, filename)
 		
 		if err := os.WriteFile(filepath, []byte(section.content), 0644); err != nil {
@@ -87,9 +97,20 @@ func parseMarkdownSections(content string) ([]section, error) {
 	
 	var currentSection *section
 	var currentContent []string
+	var preH2Content []string
 	
 	for _, line := range lines {
 		if h2Regex.MatchString(line) {
+			// If we have pre-H2 content, save it as the first section
+			if currentSection == nil && len(preH2Content) > 0 {
+				// Only save if there's non-whitespace content
+				preContent := strings.TrimSpace(strings.Join(preH2Content, "\n"))
+				if preContent != "" {
+					preSection := section{title: "preamble", content: strings.Join(preH2Content, "\n")}
+					sections = append(sections, preSection)
+				}
+			}
+			
 			// Save the previous section if it exists
 			if currentSection != nil {
 				currentSection.content = strings.Join(currentContent, "\n")
@@ -104,8 +125,20 @@ func parseMarkdownSections(content string) ([]section, error) {
 		} else if currentSection != nil {
 			// Add line to current section
 			currentContent = append(currentContent, line)
+		} else {
+			// Content before first H2 - collect it
+			preH2Content = append(preH2Content, line)
 		}
-		// If no current section and not an H2, ignore the line (content before first H2)
+	}
+	
+	// Handle case where there's only pre-H2 content and no H2 sections
+	if currentSection == nil && len(preH2Content) > 0 {
+		// Only save if there's non-whitespace content
+		preContent := strings.TrimSpace(strings.Join(preH2Content, "\n"))
+		if preContent != "" {
+			preSection := section{title: "preamble", content: strings.Join(preH2Content, "\n")}
+			sections = append(sections, preSection)
+		}
 	}
 	
 	// Save the last section
