@@ -18,7 +18,6 @@ var (
 	
 	// Neutral colors
 	MutedColor = lipgloss.Color("#999999") // Muted gray
-	BoldColor  = lipgloss.Color("#FFFFFF") // White/bold
 )
 
 // Style definitions
